@@ -217,11 +217,6 @@ begin
                     end
                     else
                     begin
-                        if(!lsbfirstint)
-                            _mosi <= shift_reg_out[WORD_LEN - 1];
-                        else
-                            _mosi <= shift_reg_out[0];
-
                         if(sckint[4:1] == WORD_LEN - 1)
                         begin
                             sckint <= {5{1'b0}};
@@ -233,6 +228,13 @@ begin
                             if(charreceivedp == charreceivedn)
                                 charreceivedp <= ~charreceivedp;
                             state <= state_idle;
+                        end
+                        else
+                        begin
+							if(!lsbfirstint)
+								_mosi <= shift_reg_out[WORD_LEN - 1];
+							else
+								_mosi <= shift_reg_out[0];
                         end
                     end
                 end
