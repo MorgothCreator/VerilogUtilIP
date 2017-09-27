@@ -23,15 +23,17 @@
 `define high_pos(w,b)     (`low_pos(w,b) + 7)
 `define high_pos2(w,b)    (`low_pos2(w,b) + 7)
 
-module keccak(clk, reset, in, in_ready, is_last, byte_num, buffer_full, out, out_ready);
+module keccak # (
+	parameter OUT_WIDTH = 512)(clk, reset, in, in_ready, is_last, byte_num, buffer_full, out, out_ready);
     input              clk, reset;
     input      [63:0]  in;
     input              in_ready, is_last;
     input      [2:0]   byte_num;
     output             buffer_full; /* to "user" module */
-    output     [511:0] out;
+    output reg [OUT_WIDTH - 1:0] out;
     output reg         out_ready;
 
+    wire     [511:0] out_int;
     reg                state;     /* state == 0: user will send more input data
                                    * state == 1: user will not send any data */
     wire       [575:0] padder_out,
@@ -43,6 +45,12 @@ module keccak(clk, reset, in, in_ready, is_last, byte_num, buffer_full, out, out
     wire       [511:0] out1;      /* before reorder byte */
     reg        [10:0]  i;         /* gen "out_ready" */
     genvar w, b;
+
+always @(*) 
+begin
+	if(out_ready)
+		out <= out_int;
+end
 
     assign out1 = f_out[1599:1599-511];
 
@@ -64,7 +72,7 @@ module keccak(clk, reset, in, in_ready, is_last, byte_num, buffer_full, out, out
         begin : L0
           for(b=0; b<8; b=b+1)
             begin : L1
-              assign out[`high_pos(w,b):`low_pos(w,b)] = out1[`high_pos2(w,b):`low_pos2(w,b)];
+              assign out_int[`high_pos(w,b):`low_pos(w,b)] = out1[`high_pos2(w,b):`low_pos2(w,b)];
             end
         end
     endgenerate
@@ -85,10 +93,10 @@ module keccak(clk, reset, in, in_ready, is_last, byte_num, buffer_full, out, out
       else if (i[10])
         out_ready <= 1;
 
-    padder
+    padder # (.OUT_WIDTH(OUT_WIDTH))
       padder_ (clk, reset, in, in_ready, is_last, byte_num, buffer_full, padder_out_1, padder_out_ready, f_ack);
 
-    f_permutation
+    f_permutation # (.OUT_WIDTH(OUT_WIDTH))
       f_permutation_ (clk, reset, padder_out, padder_out_ready, f_ack, f_out, f_out_ready);
 endmodule
 
