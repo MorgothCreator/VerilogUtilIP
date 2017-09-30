@@ -1,5 +1,5 @@
 /*
- * This IP is the synthetizable keccak 224-256-384-512 one hash ped clk implementation.
+ * This IP is the synthetizable keccak 224-256-384-512 one hash ped clk and one hash every 24 clk implementation.
  * 
  * Copyright (C) 2017  Iulian Gheorghiu
  * 
