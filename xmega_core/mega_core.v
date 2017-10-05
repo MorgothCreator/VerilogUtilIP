@@ -20,9 +20,9 @@
 
 `timescale 1ns / 1ps
 
-`include "mega_alu.vh"
-`include "mega_core.vh"
-`include "mega_core_cfg.vh"
+`include "mega_alu_h.v"
+`include "mega_core_h.v"
+`include "mega_core_cfg_h.v"
 
 module mega_core # (
 	parameter bus_addr_pgm_width = 11,
@@ -31,7 +31,7 @@ module mega_core # (
 	input rst,
 	input clk,
 	
-	output [bus_addr_pgm_width-1:0]pgm_addr,
+	output reg [bus_addr_pgm_width-1:0]pgm_addr,
 	input [15:0]pgm_data,
 	//output reg pgm_re,
 	
@@ -61,7 +61,7 @@ wire ALU_FLAG_H_OUT;	//Half Carry Flag
 wire ALU_FLAG_T_OUT;	//Transfer bit used by BLD and BST instructions
 wire ALU_FLAG_I_OUT;	//Global Interrupt Enable/Disable Flag
 reg [15:0]PC = 0;
-assign pgm_addr = PC;
+reg [15:0]pgm_indirect_addr;
 wire [15:0]PC_PLUS_ONE = PC + 1;
 wire [15:0]PC_PLUS_TWO = PC + 2;
 reg [15:0]SP = 0;
@@ -69,6 +69,26 @@ wire [15:0]SP_PLUS_ONE = SP + 1;
 wire [15:0]SP_MINUS_ONE = SP - 1;
 reg [2:0]step_cnt = 0;
 reg [15:0]tmp_pgm_data = 0;
+
+
+always @ (*)
+begin
+`ifndef CORE_TYPE_REDUCED
+	case(step_cnt)
+	`STEP2:
+	begin
+		casex(tmp_pgm_data)
+		`INSTRUCTION_LPM_R,
+		`INSTRUCTION_LPM_R_P: pgm_addr <= pgm_indirect_addr;
+		default: pgm_addr <= PC;
+		endcase
+	end
+	default: pgm_addr <= PC;
+	endcase
+`else
+	pgm_addr <= PC;
+`endif
+end
 
 // REG aditional
 reg write_to_reg = 0;
@@ -507,11 +527,37 @@ begin
 		begin
 			data_re <= 1'b1;
 		end
+`ifndef CORE_TYPE_REDUCED
+		`INSTRUCTION_LPM_R,
+		`INSTRUCTION_LPM_R_P:
+		begin
+			rd_addr_d <= pgm_data[8:4];
+			rd_16bit_d <= 1'b1;
+			if(pgm_data[0])
+			begin
+				alu_in_1 <= rd_data_d;
+				alu_in_2 <= 1;
+				rw_addr <= pgm_data[8:4];
+				rw_data <= alu_out;
+				rw_16bit <= 1'b1;
+			end
+		end
+`endif
 		endcase
 	end
 	`STEP2:
 	begin
 		casex(tmp_pgm_data)
+`ifndef CORE_TYPE_REDUCED
+		`INSTRUCTION_LPM_R,
+		`INSTRUCTION_LPM_R_P:
+		begin
+			rw_addr <= 0;
+			rw_data <= pgm_data;
+			rw_16bit <= 1'b1;
+			write_to_reg <= 1'b1;
+		end
+`endif
 		`INSTRUCTION_RET_RETI:
 		begin
 			data_re <= 1'b1;
@@ -743,6 +789,14 @@ begin
 `endif
 `endif
 `ifndef CORE_TYPE_REDUCED
+			`INSTRUCTION_LPM_R,
+			`INSTRUCTION_LPM_R_P:
+			begin
+				tmp_pgm_data <= pgm_data;
+				step_cnt <= `STEP2;
+			end
+`endif
+`ifndef CORE_TYPE_REDUCED
 `ifndef CORE_TYPE_MINIMAL
 `ifndef CORE_TYPE_CLASSIC_8K
 `ifndef CORE_TYPE_CLASSIC_128K
@@ -786,6 +840,13 @@ begin
 		`STEP2:
 		begin
 			casex(tmp_pgm_data)
+`ifndef CORE_TYPE_REDUCED
+			`INSTRUCTION_LPM_R,
+			`INSTRUCTION_LPM_R_P:
+			begin
+				pgm_indirect_addr <= rd_data_d;
+			end
+`endif
 `ifndef CORE_TYPE_REDUCED
 `ifndef CORE_TYPE_MINIMAL
 `ifndef CORE_TYPE_CLASSIC_8K

@@ -20,9 +20,9 @@
 
 `timescale 1ns / 1ps
 
-`include "mega_alu.vh"
-`include "mega_core.vh"
-`include "mega_core_cfg.vh"
+`include "mega_alu_h.v"
+`include "mega_core_h.v"
+`include "mega_core_cfg_h.v"
 
 module mega_alu(
 	input [15:0]inst,
@@ -50,8 +50,6 @@ module mega_alu(
 	output reg ALU_FLAG_I_OUT	//Global Interrupt Enable/Disable Flag
     );
     
-reg [`ALU_SELECT_BUS_SIZE - 1:0]inst_dec_out;
-
 initial
 begin
 	ALU_FLAG_C_OUT = 0;
@@ -97,7 +95,8 @@ begin
 	`INSTRUCTION_SUBI,
 	`INSTRUCTION_SBCI,
 	`INSTRUCTION_INC,
-	`INSTRUCTION_DEC: in_2_int <= in_2;
+	`INSTRUCTION_DEC,
+	`INSTRUCTION_LPM_R_P : in_2_int <= in_2;
 	endcase
 
 	casex(inst)
@@ -121,7 +120,61 @@ wire [16:0] sub_result_int_w_c = sub_result_int_w_c_tmp[17:1];
 `ifndef CORE_TYPE_MINIMAL
 `ifndef CORE_TYPE_CLASSIC_8K
 `ifndef CORE_TYPE_CLASSIC_128K
-wire [15:0]mul_result_int = in_1 * in_2;
+/*
+ * Multiply Unit.
+ */
+
+reg [7:0]in_1_mul;
+reg [7:0]in_2_mul;
+wire [15:0]mul_result_int = in_1_mul * in_2_mul;
+reg mul_b15;
+
+always @ (*)
+begin
+	casex(inst)
+	`INSTRUCTION_MUL:
+	begin
+		in_1_mul <= in_1;
+		in_2_mul <= in_2;
+	end
+	`INSTRUCTION_MULS:
+	begin
+		in_1_mul <= in_1[6:0];
+		in_2_mul <= in_2[6:0];
+		mul_b15 <= (in_1[7] ^ in_2[7]);
+	end
+	`INSTRUCTION_MULSU:
+	begin
+		in_1_mul <= in_1[6:0];
+		in_2_mul <= in_2[7:0];
+		mul_b15 <= in_1[7];
+	end
+	`INSTRUCTION_FMUL:
+	begin
+		in_1_mul <= in_1[7:1];
+		in_2_mul <= in_2[7:1];
+	end
+	`INSTRUCTION_FMULS:
+	begin
+		in_1_mul <= in_1[6:1];
+		in_2_mul <= in_2[6:1];
+		mul_b15 <= (in_1[7] ^ in_2[7]);
+	end
+	`INSTRUCTION_FMULSU:
+	begin
+		in_1_mul <= in_1[6:1];
+		in_2_mul <= in_2[7:1];
+		mul_b15 <= in_1[7];
+	end
+	default:
+	begin
+		in_1_mul <= 0;
+		in_2_mul <= 0;
+		mul_b15 <= 0;
+	end
+	endcase
+end
+
 `endif
 `endif
 `endif
@@ -172,7 +225,12 @@ begin
 `ifndef CORE_TYPE_MINIMAL
 `ifndef CORE_TYPE_CLASSIC_8K
 `ifndef CORE_TYPE_CLASSIC_128K
-		`INSTRUCTION_MUL: 		{ALU_FLAG_C_OUT, out} <= {mul_result_int[15], mul_result_int};
+		`INSTRUCTION_MUL,
+		`INSTRUCTION_FMUL: 		{ALU_FLAG_C_OUT, out} <= {mul_result_int[15], mul_result_int};
+		`INSTRUCTION_MULS,
+		`INSTRUCTION_MULSU,
+		`INSTRUCTION_FMULS,
+		`INSTRUCTION_FMULSU:	{ALU_FLAG_C_OUT, out} <= {mul_b15, mul_result_int};
 `endif
 `endif
 `endif
@@ -183,6 +241,9 @@ begin
 		`INSTRUCTION_CPC:		{ALU_FLAG_C_OUT, out} <= {carry_8bit_plus_carry, 16'h0000};
 		`INSTRUCTION_SWAP:		{ALU_FLAG_C_OUT, out} <= {1'b0, in_1[3:0], in_1[7:4]};
 		`INSTRUCTION_SEx_CLx:	{ALU_FLAG_C_OUT, out} <= inst[6:4] ? {ALU_FLAG_C_IN, {16{1'b0}}} : {inst[7], {16{1'b0}}};
+`ifndef CORE_TYPE_REDUCED
+		`INSTRUCTION_LPM_R_P:	{ALU_FLAG_C_OUT, out} <= add_result_int_w_c;
+`endif
 	endcase
 end
 
@@ -323,7 +384,12 @@ begin
 `ifndef CORE_TYPE_MINIMAL
 `ifndef CORE_TYPE_CLASSIC_8K
 `ifndef CORE_TYPE_CLASSIC_128K
-	`INSTRUCTION_MUL: ALU_FLAG_Z_OUT <= &(~out[15:0]);
+	`INSTRUCTION_MUL,
+	`INSTRUCTION_FMUL: ALU_FLAG_Z_OUT <= &(~out[15:0]);
+	`INSTRUCTION_MULS,
+	`INSTRUCTION_MULSU,
+	`INSTRUCTION_FMULS,
+	`INSTRUCTION_FMULSU: ALU_FLAG_Z_OUT <= &(~out[14:0]);
 `endif
 `endif
 `endif
