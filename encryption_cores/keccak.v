@@ -225,6 +225,7 @@ end
 
 module keccak_512 # (
 	parameter PIPELINED = 1,
+	parameter SINGLECYCLE = 0,
 	parameter OUT_WIDTH = 512)/* Supports all four modes of output. */
 	(
 		input rst,
@@ -448,7 +449,7 @@ end*/
 
 always @ (*)
 begin
-	if(PIPELINED == 0)
+	if(PIPELINED == 0 & SINGLECYCLE == 0)
 	begin
 		if(load)
 			a_a1[0] <= in ^ delimiters_int;
@@ -461,7 +462,7 @@ end
 
 always @ (posedge clk)
 begin
-	if(PIPELINED == 0)
+	if(PIPELINED == 0 & SINGLECYCLE == 0)
 	begin
 		if(rst | load)
 			stage_cnt <= 0;
@@ -479,9 +480,16 @@ end
 generate
 	for(cnt = 0; cnt < 24; cnt = cnt + 1)
 	begin: L0
-		if(PIPELINED == 1)
+		if(SINGLECYCLE == 0)
 		begin
-			`SHA3KECCAK_STAGE(cnt + 1, cnt, cnt, always @ (posedge clk))
+			if(PIPELINED == 1)
+			begin
+				`SHA3KECCAK_STAGE(cnt + 1, cnt, cnt, always @ (posedge clk))
+			end
+		end
+		else
+		begin
+			`SHA3KECCAK_STAGE(cnt + 1, cnt, cnt, always @ (a_a1[cnt]))
 		end
 	end
 endgenerate
@@ -493,7 +501,7 @@ assign out[cnt + 7: cnt] = a_a1[24][OUT_WIDTH - cnt - 1:OUT_WIDTH - (cnt + 8)];
 end
 endgenerate*/
 
-assign out = (PIPELINED == 0) ? (stage_cnt == 24 ? a_a1[0] : 0) : a_a1[24];
+assign out = SINGLECYCLE == 0 ? ((PIPELINED == 0) ? (stage_cnt == 24 ? a_a1[0] : 0) : a_a1[24]) : a_a1[24];
 assign ready = stage_cnt == 24;
 
 endmodule
