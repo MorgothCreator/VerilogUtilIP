@@ -23,7 +23,7 @@
 `define BUS_ADDR_PGM_LEN	11 /* < in 16-bit instructions */
 `define BUS_ADDR_DATA_LEN	8  /* < in bytes */
 
-module sim(
+module sim_uc(
 	//output reg [7:0]port_out,
 	//input [7:0]port_in
     );

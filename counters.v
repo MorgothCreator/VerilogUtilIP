@@ -22,31 +22,40 @@
 
 module clk_div #(parameter WIDTH = 2)(
 		input rst,
-		input clk_edge,
 		input clk_in,
 		input [WIDTH-1:0]divider,
-		output reg clk_out
+		output clk_out
 );
 reg [WIDTH-1:0]q;
 wire [WIDTH-1:0]pos_edge_loader = divider[WIDTH-1:1] + divider[0];
 wire [WIDTH-1:0]neg_edge_loader = divider[WIDTH-1:1];
-always @ (posedge clk_edge ? clk_in : ~clk_in)
+reg clk_out_int1;
+reg clk_out_int2;
+
+assign clk_out = (divider == 0) ? clk_in : 
+				(divider == 1) ? clk_out_int1 : clk_out_int2;
+
+always @ (posedge clk_in)
 begin
 	if(rst)
+	begin
 		q <= {WIDTH{1'b0}};
-	else if(!q)
-	begin
-		if(clk_out)
-			q <= neg_edge_loader;
-		else
-			q <= pos_edge_loader;
-		clk_out <= ~clk_out;
+		clk_out_int1 <= 1'b0;
+		clk_out_int2 <= 1'b0;
 	end
-	else
+	else if(divider == 1) clk_out_int1 <= ~clk_out_int1;
+	else if(divider > 1) 
 	begin
-		q <= q - 1;
+		if(!q)
+		begin
+			q <= divider;
+			clk_out_int2 <= ~clk_out_int2;
+		end
+		else
+			q <= q - 1;
 	end
 end
+
 endmodule
 
 module count_up #(parameter WIDTH = 2)(

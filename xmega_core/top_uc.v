@@ -23,7 +23,7 @@
 `define BUS_ADDR_PGM_LEN	11 /* < in 16-bit instructions */
 `define BUS_ADDR_DATA_LEN	8  /* < in bytes */
 
-module top(
+module top_uc(
 	input rst,
 	input clk,
 	output reg [2:0]RGB0,
