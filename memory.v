@@ -40,6 +40,7 @@ module ram  #(
 	parameter bus_addr_data_width = 13,  /* < in bytes */
 	parameter ram_path = "NONE"
 ) (
+	input clk,
 	input dmem_we,
 	input dmem_re,
 	input [bus_addr_data_width-1:0] dmem_a,
@@ -54,8 +55,9 @@ if (ram_path == "true")
 	$readmemh(ram_path, mem);
 end
 
-always@(posedge dmem_we) begin
-	mem[dmem_a] <= dmem_w;
+always@(posedge clk) begin
+	if(dmem_we)
+		mem[dmem_a] <= dmem_w;
 end
 assign dmem_r = dmem_re ? mem[dmem_a] : 8'bz;
 

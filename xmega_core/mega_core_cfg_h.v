@@ -5,7 +5,7 @@
 //`define CORE_TYPE_CLASSIC_128K
 //`define CORE_TYPE_ENCHANCED_8K
 `define CORE_TYPE_ENCHANCED_128K
-//`define CORE_TYPE_ENCHANCED_4M
+//`define CORE_TYPE_ENCHANCED_4M//Not implemented
 //`define CORE_TYPE_XMEGA
 
 

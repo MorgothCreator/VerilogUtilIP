@@ -49,7 +49,7 @@ module mega_core # (
     );
 
 reg data_we_int;
-reg data_we_int1;
+//reg data_we_int1;
 
 reg [7:0]ALU_FLAGS = 0;	//Carry Flag
 wire ALU_FLAG_C_OUT;	//Carry Flag
@@ -200,7 +200,7 @@ begin
 	data_out <= 'hz;
 	data_re <= 1'b0;
 	indirect_addr_offset <= {16{1'b0}};
-	data_we_int1 <= 1'b0;
+	data_we_int <= 1'b0;
 	case(step_cnt)
 	`STEP1:
 	begin
@@ -283,7 +283,7 @@ begin
 			begin
 				rd_addr_d <= pgm_data[8:4];
 				data_out <= rd_data_d;
-				data_we_int1 <= 1'b1;
+				data_we_int <= 1'b1;
 			end
 			else
 			begin
@@ -303,7 +303,7 @@ begin
 			begin
 				rd_addr_d <= pgm_data[8:4];
 				data_out <= rd_data_d;
-				data_we_int1 <= 1'b1;
+				data_we_int <= 1'b1;
 			end
 			else
 			begin
@@ -327,7 +327,7 @@ begin
 			begin
 				rd_addr_d <= pgm_data[8:4];
 				data_out <= rd_data_d;
-				data_we_int1 <= 1'b1;
+				data_we_int <= 1'b1;
 			end
 			else
 			begin
@@ -350,7 +350,7 @@ begin
 			begin
 				rd_addr_d <= pgm_data[8:4];
 				data_out <= rd_data_d;
-				data_we_int1 <= 1'b1;
+				data_we_int <= 1'b1;
 			end
 			else
 			begin
@@ -453,7 +453,7 @@ begin
 			begin
 				rd_addr_d <= pgm_data[8:4];
 				data_out <= rd_data_d;
-				data_we_int1 <= 1'b1; // Put "data_we" to high to store the selected register.
+				data_we_int <= 1'b1; // Put "data_we" to high to store the selected register.
 			end
 			else
 			begin
@@ -516,12 +516,12 @@ begin
 		`INSTRUCTION_RCALL:
 		begin
 			data_out <= PC_PLUS_ONE[7:0];// Put low byte of the PC.
-			data_we_int1 <= 1'b1; // Put "data_we" to high to store low byte of the PC.
+			data_we_int <= 1'b1; // Put "data_we" to high to store low byte of the PC.
 		end
 		`INSTRUCTION_CALL:
 		begin
 			data_out <= PC_PLUS_TWO[7:0];
-			data_we_int1 <= 1'b1; // Put "data_we" to high to store low byte of the PC.
+			data_we_int <= 1'b1; // Put "data_we" to high to store low byte of the PC.
 		end
 		`INSTRUCTION_RET_RETI:
 		begin
@@ -565,7 +565,7 @@ begin
 		`INSTRUCTION_CALL:
 		begin
 			data_out <= PC_PLUS_TWO[15:8];
-			data_we_int1 <= 1'b1; // Put "data_we" to high to store low byte of the PC.
+			data_we_int <= 1'b1; // Put "data_we" to high to store low byte of the PC.
 		end
 `ifndef CORE_TYPE_REDUCED
 `ifndef CORE_TYPE_MINIMAL
@@ -573,14 +573,14 @@ begin
 		begin
 			data_out <= PC_PLUS_ONE[15:8];// Put high byte of the PC.
 			rd_addr_d <= 5'h1e;
-			data_we_int1 <= 1'b1; // Put "data_we" to high to store low byte of the PC.
+			data_we_int <= 1'b1; // Put "data_we" to high to store low byte of the PC.
 		end
 `endif
 `endif
 		`INSTRUCTION_RCALL:
 		begin
 			data_out <= PC_PLUS_ONE[15:8];// Put high byte of the PC.
-			data_we_int1 <= 1'b1; // Put "data_we" to high to store low byte of the PC.
+			data_we_int <= 1'b1; // Put "data_we" to high to store low byte of the PC.
 		end
 `ifndef CORE_TYPE_REDUCED
 `ifndef CORE_TYPE_MINIMAL
@@ -590,7 +590,7 @@ begin
 			begin
 				rd_addr_d <= tmp_pgm_data[8:4];
 				data_out <= rd_data_d;
-				data_we_int1 <= 1'b1; // Put "data_we" to high to store low byte of the PC.
+				data_we_int <= 1'b1; // Put "data_we" to high to store low byte of the PC.
 			end
 			else
 			begin
@@ -670,9 +670,9 @@ end
 wire [15:0]relative_offset = PC_PLUS_ONE + {{5{pgm_data[11]}}, pgm_data[10:0]};
 //wire [0:7]ALU_FLAGS_FOR_CHECK = {ALU_FLAG_C_OUT,ALU_FLAG_Z_OUT,ALU_FLAG_N_OUT,ALU_FLAG_V_OUT,ALU_FLAG_S_OUT,ALU_FLAG_H_OUT,ALU_FLAG_T_OUT,ALU_FLAG_I_OUT};
 
-always @ (clk or data_we_int or data_we_int1)
+always @ (/*clk or */data_we_int)
 begin
-	data_we <= (data_we_int | data_we_int1) & ~clk;
+	data_we <= data_we_int;// & ~clk;
 end
 
 /*
@@ -707,7 +707,6 @@ begin
 		ALU_FLAGS[7] <= ALU_FLAG_I_OUT;	//Global Interrupt Enable/Disable Flag
 		step_cnt <= `STEP1;
 		PC <= PC_PLUS_ONE;// Increment PC by 1 if not specified otherwise.
-		data_we_int <= 1'b0; // Clear "data_we" if not specified otherwise.
 		case(step_cnt)
 		`STEP1:
 		begin
@@ -961,6 +960,7 @@ mega_alu alu(
 	.ALU_FLAG_I_OUT(ALU_FLAG_I_OUT)		//Global Interrupt Enable/Disable Flag
 );
 
-assign io_we = write_to_io & ~clk;// If "write_to_io" is high put to "io_we" the "clk" signal.
+assign io_we = write_to_io;
+//assign io_we = write_to_io & ~clk;// If "write_to_io" is high put to "io_we" the "clk" signal.
 
 endmodule

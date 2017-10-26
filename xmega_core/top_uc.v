@@ -68,7 +68,7 @@ wire LOCKED;
       .CLKFBOUT_PHASE(0.0),     // Phase offset in degrees of CLKFB, (-360.000-360.000).
       .CLKIN1_PERIOD(10.0),      // Input clock period in ns to ps resolution (i.e. 33.333 is 30 MHz).
       // CLKOUT0_DIVIDE - CLKOUT5_DIVIDE: Divide amount for each CLKOUT (1-128)
-      .CLKOUT0_DIVIDE(20),
+      .CLKOUT0_DIVIDE(9),
       .CLKOUT1_DIVIDE(1),
       .CLKOUT2_DIVIDE(1),
       .CLKOUT3_DIVIDE(1),
@@ -125,6 +125,7 @@ ram  #(
 .bus_addr_data_width(`BUS_ADDR_DATA_LEN),
 .ram_path("NONE")
 )ram(
+	.clk(core_clk),
 	.dmem_re(data_re),
 	.dmem_we(data_we),
 	.dmem_a(data_addr),
@@ -135,7 +136,7 @@ ram  #(
 reg [7:0]out_led;
 wire io_select_0 = (io_addr == 0 & (io_we | io_re)) ? 1'b1:1'b0;
 
-always @ (*)
+always @ (posedge core_clk)
 begin
 	if(io_select_0 & io_we)
 		{LED, RGB0[1], RGB1[1], RGB2[1], RGB3[1]} <= io_out;

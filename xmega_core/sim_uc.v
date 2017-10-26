@@ -65,6 +65,7 @@ ram  #(
 .bus_addr_data_width(`BUS_ADDR_DATA_LEN),
 .ram_path("NONE")
 )ram(
+	.clk(clk),
 	.dmem_re(data_re),
 	.dmem_we(data_we),
 	.dmem_a(data_addr),
