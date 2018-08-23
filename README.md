@@ -4,4 +4,4 @@
 
 Here is a bunch of util IPs
 
-All IPs from this project are licensed under GPL license.
+All IPs from this project are licensed under GPL license until othervice is specified.
